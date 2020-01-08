@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import cPickle
+import _pickle as cPickle
 import csv
 import numpy as np
 import os
@@ -71,9 +71,7 @@ def write_cPickle(file, data):
     @param file string: Path to the new cPickle file.
     @param data object: Data to be stored.
     """
-    f = open(file, "w")
-    cPickle.dump(data, f, protocol=1)
-    f.close()
+    cPickle.dump(data, open(file, 'wb'), protocol=1)
 
 
 def compute_ssm(X, h, dist="euclidean"):
@@ -102,7 +100,7 @@ def compute_key_inv_ssm(X, h, dist="euclidean"):
     N = X.shape[0]
     SS = np.zeros((P, N, N))
     dist = "euclidean"
-    for i in xrange(P):
+    for i in range(P):
         SS[i] = spatial.distance.cdist(X, np.roll(X, i), dist)
 
     #import ismir
@@ -235,7 +233,8 @@ def median_filter(X, L=9):
     """Applies a median filter of size L to the matrix of row
         observations X."""
     Y = np.ones(X.shape) * X.min()
-    Lh = (L - 1) / 2
+    Lh = int((L - 1) / 2)
+
     for i in np.arange(Lh, X.shape[0] - Lh):
         Y[i, :] = np.median(X[i - Lh:i + Lh, :], axis=0)
     return Y
@@ -271,9 +270,9 @@ def split_patterns(patterns, max_diff, min_dur):
 
     N = len(patterns)
     splitted = np.zeros(N)
-    for i in xrange(N):
+    for i in range(N):
         o1 = patterns[i][0]
-        for j in xrange(N):
+        for j in range(N):
             if i == j:
                 continue
             if splitted[j]:
@@ -321,7 +320,7 @@ def split_patterns(patterns, max_diff, min_dur):
                 splitted[j] = 1
 
     # Add the rest of non-splitted patterns
-    for i in xrange(N):
+    for i in range(N):
         if splitted[i] == 0:
             new_p = []
             for p in patterns[i]:
@@ -395,7 +394,7 @@ def compute_segment_score(X, start_i, start_j, min_dur, th):
         #score -= patch.trace(offset=-3)
         score /= (patch.shape[0] + 2 * (patch.shape[0] - 1))
 
-        print score
+        print(score)
 
         break
         M += 1
@@ -411,8 +410,8 @@ def find_segments(X, min_dur, th=0.95, rho=2):
     N = X.shape[0]
     segments = []
     counter = 0
-    for i in xrange(N - min_dur):
-        for j in xrange(i + 1, N - min_dur):
+    for i in range(N - min_dur):
+        for j in range(i + 1, N - min_dur):
             #print i, j, min_dur
             # Compute score and assign
             score, M = compute_segment_score_omega(X, i, j, min_dur, th, rho)
@@ -427,8 +426,8 @@ def find_segments(X, min_dur, th=0.95, rho=2):
             # Counter stuff
             counter += 1
             if counter % (10 * N) == 0:
-                print "\t------ %.2f %%" % \
-                    (counter / float(N * (N - 1) / 2.) * 100)
+                print("\t------ %.2f %%" % \
+                    (counter / float(N * (N - 1) / 2.) * 100))
     return segments
 
 
@@ -463,7 +462,7 @@ def read_wav(wav_file):
 def compute_spectrogram(x, wlen, fs):
     """Computes a spectrogram."""
     N = int(fs * wlen)
-    nstep = N / 2        # Hop size of 0.5 * N
+    nstep = int(N / 2)        # Hop size of 0.5 * N
     nwin = N
 
     logging.info("Spectrogram: sample rate: %d, hop size: %d, FFT size: %d" %
@@ -471,13 +470,13 @@ def compute_spectrogram(x, wlen, fs):
 
     window = np.blackman(nwin)
     nn = range(nwin, len(x), nstep)
-    X = np.zeros((len(nn), N / 2))
+    X = np.zeros((len(nn), nstep))
     x_down = np.zeros(len(nn))
     for i, n in enumerate(nn):
         xseg = x[n - nwin:n]
         x_down[i] = np.mean(xseg)
         z = np.fft.fft(window * xseg, N)
-        X[i, :] = np.abs(z[:N / 2])
+        X[i, :] = np.abs(z[:nstep])
 
     return X, N
 
@@ -490,9 +489,9 @@ def compute_CQT_filters(N, fs):
     """Computes the CQT filters."""
     O = 4
     min_f = 55
-    filters = np.zeros((12, N / 2))
-    for p in xrange(12):
-        for octave in xrange(O):
+    filters = np.zeros((12, int(N / 2)))
+    for p in range(12):
+        for octave in range(O):
             start_bin = freq2bin(min_f * 2 ** (octave + (p - 1) / 12.), N, fs)
             center_bin = freq2bin(min_f * 2 ** (octave + p / 12.), N, fs)
             M = (center_bin - start_bin) * 2 + 1
@@ -516,7 +515,7 @@ def compute_audio_chromagram(wav_file, h):
 
     filters = compute_CQT_filters(N, fs)
     C = np.dot(X, filters.T)
-    for i in xrange(C.shape[0]):
+    for i in range(C.shape[0]):
         # Normalize (if greater than a certain energy)
         if C[i, :].max() >= 1:
             C[i, :] /= C[i, :].max()

@@ -46,12 +46,13 @@ import argparse
 import logging
 import numpy as np
 import os
+import librosa
 import time
 import utils
 import ismir
 
 
-def get_bpm(wav_file):
+def get_bpm_(wav_file):
     """Gets the correct bpm based on the wav_file name. If the wav_file is not
     contained in the JKU dataset, raises error.
 
@@ -78,6 +79,13 @@ def get_bpm(wav_file):
     return bpm_dict[wav_file]
 
 
+def get_bpm(wav_file):
+    y, sr = librosa.load(wav_file)
+    onset_env = librosa.onset.onset_strength(y, sr=sr)
+    tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=sr)
+    return int(tempo)
+
+
 def print_patterns(patterns, h):
     """Prints the patterns and the occurrences included in pattterns.
 
@@ -90,12 +98,12 @@ def print_patterns(patterns, h):
     """
     logging.info("Printing Extracted Motives (all times are in seconds):")
     for i, p in enumerate(patterns):
-        print "Pattern %d:" % (i + 1)
+        print("Pattern %d:" % (i + 1))
         for j, occ in enumerate(p):
             # Get start and end times
             start = occ[2] * h / 2.
             end = occ[3] * h / 2.
-            print "\tOccurrence %d: (%.2f, %.2f)" % (j + 1, start, end)
+            print("\tOccurrence %d: (%.2f, %.2f)" % (j + 1, start, end))
 
 
 def occurrence_to_csv(start, end, midi_score):
@@ -186,7 +194,7 @@ def obtain_patterns(segments, max_diff):
     # Initially, all patterns must be checked
     checked_patterns = np.zeros(N)
 
-    for i in xrange(N):
+    for i in range(N):
         if checked_patterns[i]:
             continue
 
@@ -201,7 +209,7 @@ def obtain_patterns(segments, max_diff):
         checked_patterns[i] = 1
 
         # Find occurrences
-        for j in xrange(N):
+        for j in range(N):
             if checked_patterns[j]:
                 continue
             ss = segments[j]
